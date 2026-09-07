@@ -21,9 +21,46 @@ function graphqlErrorResponse(result) {
   return errors.length ? errors.map(({ message }) => message).join("; ") : null;
 }
 
+async function customerIdFromAccountToken(request, shopDomain) {
+  const authorization = request.headers.get("Authorization") || "";
+  const token = authorization.startsWith("Bearer ")
+    ? authorization.slice("Bearer ".length)
+    : null;
+
+  if (!token) return null;
+
+  const discoveryResponse = await fetch(
+    `https://${shopDomain}/.well-known/customer-account-api`,
+  );
+  if (!discoveryResponse.ok) throw new Error("Customer Account API discovery failed.");
+
+  const { graphql_api: graphqlEndpoint } = await discoveryResponse.json();
+  const customerResponse = await fetch(graphqlEndpoint, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      query: "query { customer { id } }",
+    }),
+  });
+  const result = await customerResponse.json();
+  const error = graphqlErrorResponse(result);
+  const customerId = result.data?.customer?.id;
+
+  if (error || !customerId) {
+    throw new Error(error || "Customer Account API did not return a customer.");
+  }
+
+  return customerId;
+}
+
 export async function loader({ request }) {
-  const { admin } = await authenticate.public.appProxy(request);
-  const customerId = customerIdFromRequest(request);
+  const { admin, session } = await authenticate.public.appProxy(request);
+  const customerId = request.headers.get("Authorization")
+    ? await customerIdFromAccountToken(request, session.shop)
+    : customerIdFromRequest(request);
 
   if (!admin || !customerId) return jsonResponse({ handles: [] });
 
@@ -51,8 +88,10 @@ export async function loader({ request }) {
 }
 
 export async function action({ request }) {
-  const { admin } = await authenticate.public.appProxy(request);
-  const customerId = customerIdFromRequest(request);
+  const { admin, session } = await authenticate.public.appProxy(request);
+  const customerId = request.headers.get("Authorization")
+    ? await customerIdFromAccountToken(request, session.shop)
+    : customerIdFromRequest(request);
 
   if (!admin || !customerId) {
     return jsonResponse({ error: "A logged-in customer is required." }, { status: 401 });
