@@ -1,0 +1,8 @@
+{
+  "name": "customer-account-wishlist",
+  "private": true,
+  "dependencies": {
+    "@shopify/ui-extensions": "latest",
+    "preact": "^10.27.2"
+  }
+}

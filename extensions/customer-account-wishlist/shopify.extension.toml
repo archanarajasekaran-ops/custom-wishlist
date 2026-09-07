@@ -1,0 +1,13 @@
+api_version = "2026-07"
+
+[[extensions]]
+type = "ui_extension"
+name = "Customer wishlist"
+handle = "customer-account-wishlist"
+
+[[extensions.targeting]]
+module = "./src/CustomerAccountWishlist.jsx"
+target = "customer-account.page.render"
+
+[extensions.capabilities]
+api_access = true
