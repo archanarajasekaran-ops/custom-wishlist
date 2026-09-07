@@ -110,6 +110,38 @@ export async function action({ request }) {
 
   if (!handles) return jsonResponse({ error: "handles must be an array." }, { status: 400 });
 
+  const definitionResponse = await admin.graphql(
+    `#graphql
+      query WishlistDefinition {
+        metafieldDefinitions(first: 10, ownerType: CUSTOMER, query: "namespace:custom AND key:wishlist") {
+          nodes {
+            namespace
+            key
+            type { name }
+          }
+        }
+      }
+    `,
+  );
+  const definitionResult = await definitionResponse.json();
+  const definitionError = graphqlErrorResponse(definitionResult);
+  const definition = definitionResult.data?.metafieldDefinitions?.nodes?.find(
+    (node) => node.namespace === WISHLIST_NAMESPACE && node.key === WISHLIST_KEY,
+  );
+
+  if (definitionError || !definition) {
+    const error = definitionError || "Customer metafield custom.wishlist is not defined.";
+    console.error("Wishlist definition lookup failed:", error);
+    return jsonResponse({ error }, { status: 422 });
+  }
+
+  const metafieldType = definition.type?.name;
+  if (!['json', 'list.single_line_text_field'].includes(metafieldType)) {
+    const error = `custom.wishlist must be JSON or a list of single-line text, not ${metafieldType}.`;
+    console.error("Wishlist definition has unsupported type:", error);
+    return jsonResponse({ error }, { status: 422 });
+  }
+
   const response = await admin.graphql(
     `#graphql
       mutation SaveWishlist($metafields: [MetafieldsSetInput!]!) {
@@ -125,7 +157,7 @@ export async function action({ request }) {
           ownerId: customerId,
           namespace: WISHLIST_NAMESPACE,
           key: WISHLIST_KEY,
-          type: "list.single_line_text_field",
+          type: metafieldType,
           value: JSON.stringify(handles),
         }],
       },
