@@ -1,6 +1,6 @@
 import { authenticate } from "../shopify.server";
 
-const WISHLIST_NAMESPACE = "$app";
+const WISHLIST_NAMESPACE = "custom";
 const WISHLIST_KEY = "wishlist";
 
 function customerIdFromRequest(request) {
@@ -86,7 +86,7 @@ export async function action({ request }) {
           ownerId: customerId,
           namespace: WISHLIST_NAMESPACE,
           key: WISHLIST_KEY,
-          type: "list.single_line_text_field",
+          type: "json",
           value: JSON.stringify(handles),
         }],
       },

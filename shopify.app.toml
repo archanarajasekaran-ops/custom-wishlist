@@ -31,14 +31,6 @@ url = "https://custom-wishlist-zufv.onrender.com/apps/wishlist"
 subpath = "wishlist"
 prefix = "apps"
 
-[customer.metafields.app.wishlist]
-type = "list.single_line_text_field"
-name = "Wishlist"
-description = "Product handles saved by the customer"
-
-  [customer.metafields.app.wishlist.access]
-  admin = "merchant_read_write"
-
 [product.metafields.app.demo_info]
 type = "single_line_text_field"
 name = "Demo Source Info"
