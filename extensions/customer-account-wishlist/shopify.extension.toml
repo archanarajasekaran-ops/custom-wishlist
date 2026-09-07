@@ -5,6 +5,8 @@ type = "ui_extension"
 name = "Customer wishlist"
 handle = "customer-account-wishlist"
 
+uid = "2842f224-d987-cfea-47c3-182398c28d103c711e42"
+
 [[extensions.targeting]]
 module = "./src/CustomerAccountWishlist.jsx"
 target = "customer-account.page.render"

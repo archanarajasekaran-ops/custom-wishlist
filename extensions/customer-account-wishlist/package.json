@@ -2,6 +2,7 @@
   "name": "customer-account-wishlist",
   "private": true,
   "dependencies": {
+    "@preact/signals": "^2.3.1",
     "@shopify/ui-extensions": "latest",
     "preact": "^10.27.2"
   }
