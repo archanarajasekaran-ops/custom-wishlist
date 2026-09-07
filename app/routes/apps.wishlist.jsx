@@ -86,7 +86,7 @@ export async function action({ request }) {
           ownerId: customerId,
           namespace: WISHLIST_NAMESPACE,
           key: WISHLIST_KEY,
-          type: "json",
+          type: "list.single_line_text_field",
           value: JSON.stringify(handles),
         }],
       },
