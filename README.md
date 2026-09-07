@@ -119,6 +119,25 @@ pnpm run build
 
 ## Hosting
 
+### Google Cloud Run
+
+This repository includes a parameterized `cloudbuild.yaml` for deploying the app to Cloud Run. The production configuration uses Cloud SQL for PostgreSQL because Cloud Run instances are ephemeral and the default SQLite database is not suitable for shared production storage.
+
+Before the first deployment:
+
+1. Create an Artifact Registry Docker repository and a Cloud SQL PostgreSQL instance.
+2. Create Secret Manager secrets named `shopify-api-key`, `shopify-api-secret`, and `database-url`.
+3. Grant the Cloud Run runtime service account access to those secrets and the Cloud SQL Client role.
+4. Replace the `_REGION`, `_CLOUD_SQL_INSTANCE`, and `_APP_URL` substitutions in `cloudbuild.yaml`.
+5. Update `shopify.app.toml` with the same production URL, then run `npm run deploy` to sync the Shopify app configuration.
+6. Connect the repository to Cloud Build, or run the build manually:
+
+```shell
+gcloud builds submit --config=cloudbuild.yaml
+```
+
+The `DATABASE_URL` secret must use a PostgreSQL connection string. For a Cloud SQL Unix socket connection, use the Cloud SQL instance connection name as the host parameter, for example `postgresql://USER:PASSWORD@/DATABASE?host=/cloudsql/PROJECT:REGION:INSTANCE`.
+
 When you're ready to set up your app in production, you can follow [our deployment documentation](https://shopify.dev/docs/apps/launch/deployment) to host it externally. From there, you have a few options:
 
 - [Google Cloud Run](https://shopify.dev/docs/apps/launch/deployment/deploy-to-google-cloud-run): This tutorial is written specifically for this example repo, and is compatible with the extended steps included in the subsequent [**Build your app**](tutorial) in the **Getting started** docs. It is the most detailed tutorial for taking a React Router-based Shopify app and deploying it to production. It includes configuring permissions and secrets, setting up a production database, and even hosting your apps behind a load balancer across multiple regions.

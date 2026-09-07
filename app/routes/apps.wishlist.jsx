@@ -1,6 +1,6 @@
 import { authenticate } from "../shopify.server";
 
-const WISHLIST_NAMESPACE = "custom";
+const WISHLIST_NAMESPACE = "$app";
 const WISHLIST_KEY = "wishlist";
 
 function customerIdFromRequest(request) {
@@ -14,6 +14,11 @@ function jsonResponse(data, init = {}) {
     headers: { "Cache-Control": "no-store" },
     ...init,
   });
+}
+
+function graphqlErrorResponse(result) {
+  const errors = result.errors || [];
+  return errors.length ? errors.map(({ message }) => message).join("; ") : null;
 }
 
 export async function loader({ request }) {
@@ -35,6 +40,11 @@ export async function loader({ request }) {
     { variables: { id: customerId } },
   );
   const result = await response.json();
+  const graphqlError = graphqlErrorResponse(result);
+  if (graphqlError) {
+    console.error("Wishlist load failed:", graphqlError);
+    return jsonResponse({ error: graphqlError, handles: [] }, { status: 502 });
+  }
   const handles = result.data?.customer?.metafield?.jsonValue;
 
   return jsonResponse({ handles: Array.isArray(handles) ? handles : [] });
@@ -76,17 +86,23 @@ export async function action({ request }) {
           ownerId: customerId,
           namespace: WISHLIST_NAMESPACE,
           key: WISHLIST_KEY,
-          type: "json",
+          type: "list.single_line_text_field",
           value: JSON.stringify(handles),
         }],
       },
     },
   );
   const result = await response.json();
+  const graphqlError = graphqlErrorResponse(result);
   const userErrors = result.data?.metafieldsSet?.userErrors || [];
 
-  if (result.errors || userErrors.length) {
-    return jsonResponse({ error: userErrors[0]?.message || "Shopify API request failed." }, { status: 422 });
+  if (graphqlError || userErrors.length) {
+    const error = graphqlError || userErrors.map(({ message }) => message).join("; ");
+    console.error("Wishlist save failed:", error, {
+      customerId,
+      fields: userErrors.flatMap(({ field }) => field || []),
+    });
+    return jsonResponse({ error }, { status: 422 });
   }
 
   return jsonResponse({ handles });
